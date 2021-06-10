@@ -50,23 +50,23 @@ export default {
     UnrealBloomPass,
   },
   setup() {
-    let LEN = 25;
+    let LEN = parseInt(localStorage.getItem('LEN')) || 25;
     
     let ARR = Array.from(Array(LEN), () => {
       return Array.from(Array(LEN), () => new Array(LEN).fill(false))
     })
 
     return {
-      MAX: LEN,
+      MAX: 25,
       SIZE: 5,
-      TIME: 1,
-      SPEED: 1,
-      INC: 10,
+      TIME: parseFloat(localStorage.getItem('TIME')) || 1,
+      SPEED: parseFloat(localStorage.getItem('SPEED')) || 1,
+      INC: parseInt(localStorage.getItem('INC')) || 10,
       INIT: false,
-      LOOP: true,
-      SHOW_DEAD: true,
-      ALIVE_COLOUR: "#ffc400",
-      DEAD_COLOUR: "#7b10e6",
+      LOOP: localStorage.getItem('LOOP') ? localStorage.getItem('LOOP') === 'true' : true,
+      SHOW_DEAD: localStorage.getItem('SHOW_DEAD') ? localStorage.getItem('SHOW_DEAD') === 'true' : true,
+      ALIVE_COLOUR: localStorage.getItem('ALIVE_COLOUR') || "#ffc400",
+      DEAD_COLOUR: localStorage.getItem('DEAD_COLOUR') || "#7b10e6",
       LEN,
       ARR
     };
@@ -75,24 +75,24 @@ export default {
     const gui = new dat.GUI();
     let options = gui.addFolder("Options");
     options.add(this, 'LEN', 8, this.MAX, 1).name("Size").onChange(this.restart)
-    options.add(this, 'INC', 5, this.MAX, 1).name("Spacing").onChange(this.restart)
+    options.add(this, 'INC', 5, this.MAX, 1).name("Spacing").onChange(this.replot)
     options.add(this, 'SPEED', 0, 10).name("Speed").onChange(this.updateSpeed)
     options.add(this, 'LOOP').name("Loop").onChange(this.loop)
     options.add(this, 'SHOW_DEAD').name("Show Dead Cells").onChange(this.replot)
     let colours = gui.addFolder("Colours");
-    colours.addColor(this, 'ALIVE_COLOUR').name("Alive Cell")
-    colours.addColor(this, 'DEAD_COLOUR').name("Dead Cell")
+    colours.addColor(this, 'ALIVE_COLOUR').name("Alive Cell").onFinishChange(this.updateColours)
+    colours.addColor(this, 'DEAD_COLOUR').name("Dead Cell").onFinishChange(this.updateColours)
     let controls = gui.addFolder("Controls");
     this.control = controls.add(this, 'stop').name("Pause")
     controls.add(this, 'restart').name("Restart")
+    controls.add(this, 'reset').name("Reset Options")
     
     this.stats = new Stats();
     this.stats.showPanel(0);
     document.body.appendChild( this.stats.dom );
 
     this.imesh = this.$refs.imesh.mesh;
-    this.imesh.count = (this.MAX)**3
-    this.imesh.instanceMatrix.setUsage( DynamicDrawUsage )
+    this.imesh.count = (this.MAX)**3;
     
     this.renderer = this.$refs.renderer;
     this.renderer.onBeforeRender(this.animate);
@@ -114,7 +114,7 @@ export default {
       const dummy = new Object3D();
       let x,y,z;
       x = y = z = - (this.LEN / 2) * this.INC;
-      this.imesh.count = (this.LEN)**3
+      this.imesh.count = (this.MAX)**3
       for (let i = 0; i < (this.LEN)**3; i++) {
         dummy.position.set(x, y, z);
         dummy.updateMatrix();
@@ -128,6 +128,14 @@ export default {
           y = - (this.LEN / 2) * this.INC;
           z += this.INC;
         }
+      }
+      let m = new Matrix4();
+      m.set(0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0 );
+      for (let i = (this.LEN)**3; i < (this.MAX)**3; i++) {
+        this.imesh.setMatrixAt(i, m);
       }
       this.imesh.instanceMatrix.needsUpdate = true;
     },
@@ -224,6 +232,7 @@ export default {
       if (!count && this.LOOP) this.next = true;
     },
     restart() {
+      localStorage.setItem("LEN", this.LEN)
       this.ARR = Array.from(Array(this.LEN), () => {
         return Array.from(Array(this.LEN), () => new Array(this.LEN).fill(false))
       })
@@ -232,6 +241,8 @@ export default {
     },
     updateSpeed() {
       this.TIME = 1 / (this.SPEED + 0.1);
+      localStorage.setItem("TIME", this.TIME)
+      localStorage.setItem("SPEED", this.SPEED)
       if (this.interval) {
         window.clearInterval(this.interval);
         this.interval = setInterval(this.step, this.TIME*1000)
@@ -248,6 +259,8 @@ export default {
       }
     },
     replot() {
+      localStorage.setItem("INC", this.INC)
+      localStorage.setItem("SHOW_DEAD", this.SHOW_DEAD)
       const dummy = new Object3D();
       let x,y,z;
       x = y = z = - (this.LEN / 2) * this.INC;
@@ -266,6 +279,16 @@ export default {
         }
       }
       this.imesh.instanceMatrix.needsUpdate = true;
+    },
+    updateColours() {
+      localStorage.setItem("ALIVE_COLOUR", this.ALIVE_COLOUR)
+      localStorage.setItem("DEAD_COLOUR", this.DEAD_COLOUR)
+    },
+    reset() {
+      if (confirm("Are you sure you want to reset everything?")) {
+        localStorage.clear();
+        location.reload();
+      }
     }
   }
 };
