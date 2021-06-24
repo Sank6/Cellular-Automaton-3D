@@ -3,7 +3,7 @@
     <Camera :position="{ y: 250, z: 250 }" />
     <Scene background="#08090d">
       
-      <PointLight ref="light" :intensity="1" color="#ffff00" />
+      <PointLight ref="light" :intensity="1" color="#ffffff" />
       <PointLight color="#ffffff" :intensity="0.3" :position="{ x: -LEN*INC**2, y: LEN*INC**2, z: LEN*INC**2 }" />
       <PointLight color="#ffffff" :intensity="0.3" :position="{ x: -LEN*INC**2, y: LEN*INC**2, z: -LEN*INC**2 }" />
       <InstancedMesh ref="imesh" :count="MAX**3">
